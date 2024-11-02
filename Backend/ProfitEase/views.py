@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.Decorators import api_view,permission_classes
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.core.paginator import Paginator
 from rest_framework.response import Response
@@ -15,15 +15,15 @@ from .serializers import ProductSerializer,SalesSerializer,PaymentSerializer,Loa
 def product_list(request):
 
     if request.method == 'GET':
-        Product = Product.objects.filter(created_by=request.user)
+        products = Product.objects.filter(created_by=request.user)
 
         search_product = request.GET.get('search', '')
         if search_product:
-            Product = Product.filter(
+            products = Product.filter(
                 product_name__icontains=search_product
             )
         
-        paginator = Paginator(Product, 5)
+        paginator = Paginator(products, 5)
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
 
@@ -49,7 +49,7 @@ def product_list(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def product_details(request, pk):
+def product_detail(request, pk):
 
     try:
         product = Product.objects.get(pk=pk, created_by=request.user)
@@ -114,7 +114,7 @@ def sales_list(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def sales_details(request, pk):
+def sale_detail(request, pk):
 
     try:
         sales = Sales.objects.get(pk=pk, created_by=request.user)

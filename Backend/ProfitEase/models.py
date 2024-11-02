@@ -21,8 +21,20 @@ class Product(models.Model):
 class Sales(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity_sold = models.IntegerField()
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  
     date_sold = models.DateField()
+
+    # User Created the record
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        if self.quantity_sold and self.product:
+            self.total_amount = self.product.selling_price * self.quantity_sold
+        super().save(*args, **kwargs)
+        
+        # Reduce product quantity
+        self.product.quantity -= self.quantity_sold
+        self.product.save()
 
     @property
     def Profit(self):
@@ -31,15 +43,7 @@ class Sales(models.Model):
     def __str__(self):
         return f"{self.product.product_name} - {self.quantity_sold} sold"
 
-@receiver(post_save, sender=Sales)
-def update_total_amount_and_quantity(sender, instance, **kwargs):
-    if not instance.total_amount:
-        instance.total_amount = instance.product.selling_price * instance.quantity_sold
-        instance.save()
 
-    product = instance.product
-    product.quantity -= instance.quantity_sold
-    product.save()
 
 class Loan(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -50,14 +54,25 @@ class Loan(models.Model):
     due_date = models.DateField()
     is_paid = models.BooleanField(default=False)
 
+    # User Created the record
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        if not self.loan_amount:
+            self.loan_amount = self.product.selling_price * self.quantity_on_loan
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
-        return f"Loan to {self.customer_name} for {self.product.name}"
+        return f"Loan to {self.customer_name} for {self.product.product_name}"
 
 class Payment(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateField(auto_now_add=True)
+
+    # User Created the record
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Payment of {self.payment_amount} for {self.loan.customer_name}"

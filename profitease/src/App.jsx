@@ -1,17 +1,25 @@
 import { useState } from 'react'
+import {BrowserRouter, Navigate, Route, Routes} from 'react-router-dom'
+import Login from './pages/Login'
+import Home from './pages/Home'
 
-import './App.css'
-
-function App() {
+const App = () => {
   
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
+
     
-    </div>
+    <main className=''>
+      <BrowserRouter>
+        <Routes>
+
+          <Route path='' element={<Home/>}/>
+          <Route path="/signin" element={<Login/>}/>
+        </Routes>
+      
+      </BrowserRouter>
+
+    </main>
   )
 }
 

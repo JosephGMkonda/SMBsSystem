@@ -9,6 +9,7 @@ djangorestframework = "*"
 djangorestframework-simplejwt = "*"
 pymysql = "*"
 django = "==4.1.13"
+django-cors-headers = "*"
 
 [dev-packages]
 

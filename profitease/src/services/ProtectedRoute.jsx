@@ -78,7 +78,7 @@ const ProtectedRoute = ({children}) => {
         return <div>Loading...</div>
     }
 
-    return isAuthenticated ? children : <Navigate to='/signup' />
+    return isAuthenticated ? children : <Navigate to='/signin' />
 
 
 

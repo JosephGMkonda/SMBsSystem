@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import datetime
 
 
 class Product(models.Model):
@@ -9,11 +10,21 @@ class Product(models.Model):
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField()
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     # User Created the record
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    @property
+    def total_cost(self):
+        return self.selling_price * self.quantity
+    @property
+    def formatted_date(self):
+        return self.updated_at.date()
+    
+    
 
     def __str__(self):
         return self.product_name
@@ -21,27 +32,67 @@ class Product(models.Model):
 class Sales(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity_sold = models.IntegerField()
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  
-    date_sold = models.DateField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
 
     # User Created the record
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
+        # Calculate total_amount
         if self.quantity_sold and self.product:
             self.total_amount = self.product.selling_price * self.quantity_sold
-        super().save(*args, **kwargs)
+
+        # Ensure enough stock
+        if self.product.quantity < self.quantity_sold:
+            raise ValueError(f"Insufficient stock for {self.product.product_name}. Only {self.product.quantity} available.")
         
-        # Reduce product quantity
+        super().save(*args, **kwargs)
+
+        # Calculate profit for this sale
+        sale_profit = self.total_amount - (self.product.cost_price * self.quantity_sold)
+
+        # Update stock quantity
         self.product.quantity -= self.quantity_sold
         self.product.save()
 
+        # Update daily profit in the Profit model
+        today = datetime.now().date()
+        profit_entry, created = Profit.objects.get_or_create(
+            date=today,
+            product=self.product,
+            defaults={"daily_profit": 0.00, "accumulated_monthly_profit": 0.00},
+        )
+        profit_entry.daily_profit += sale_profit
+
+        # Calculate accumulated monthly profit
+        first_day_of_month = today.replace(day=1)
+        monthly_profit = Profit.objects.filter(
+            product=self.product,
+            date__gte=first_day_of_month,
+            date__lte=today
+        ).aggregate(total=models.Sum("daily_profit"))["total"] or 0.00
+
+        profit_entry.accumulated_monthly_profit = monthly_profit
+        profit_entry.save()
+
     @property
-    def Profit(self):
+    def profit(self):
         return self.total_amount - (self.product.cost_price * self.quantity_sold)
 
     def __str__(self):
         return f"{self.product.product_name} - {self.quantity_sold} sold"
+
+    
+class Profit(models.Model):
+    date = models.DateField(auto_now_add=True)  
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    daily_profit = models.DecimalField(max_digits=10, decimal_places=2)  
+    accumulated_monthly_profit = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  
+
+    def __str__(self):
+        return f"Profit for {self.product.product_name} on {self.date}: {self.daily_profit}"
+
 
 
 

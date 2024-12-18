@@ -1,8 +1,16 @@
 import React from 'react'
+import Sidebar from '../components/Sidebar'
+import { Box,Typography } from '@mui/material'
 
 const Home = () => {
   return (
-    <div>Home</div>
+    <Box sx={{display:'flex'}}>
+      <Sidebar/>
+     <Box component="main" sx={{ flexGrow:1, p:3, marginTop:"65px"}}>
+  
+     </Box>
+
+    </Box>
   )
 }
 

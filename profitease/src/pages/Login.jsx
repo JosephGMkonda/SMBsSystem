@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { ACCESS_TOKEN,REFRESH_TOKEN } from '../services/Constant';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios'
 
 
 const Login = () => {
@@ -51,12 +52,13 @@ const Login = () => {
 
         if(Object.keys(formError).length === 0){
             try {
-                const response = await api.post('api/token',{
+                const response = await axios.post('http://127.0.0.1:8000/api/token/',{
                     username: formData.username,
                     password: formData.password
                 })
                 localStorage.setItem(ACCESS_TOKEN, response.data.access)
                 localStorage.setItem(REFRESH_TOKEN, response.data.access)
+                console.log("Token stored, navigating to home page...");
                 navigate('/')
             }catch(error){
 
